@@ -260,17 +260,17 @@ end
 
 
 function methods:IsQuestCached(questID)
-	return self[listener.types.quest] and self[listener.types.quest][questID]
+	return self[listener.types.quest] and self[listener.types.quest][questID] == true
 end
 
 
 function methods:IsItemCached(itemID)
-	return self[listener.types.item] and self[listener.types.item][itemID]
+	return self[listener.types.item] and self[listener.types.item][itemID] == true
 end
 
 
 function methods:IsSpellCached(spellID)
-	return self[listener.types.spell] and self[listener.types.spell][spellID]
+	return self[listener.types.spell] and self[listener.types.spell][spellID] == true
 end
 
 
