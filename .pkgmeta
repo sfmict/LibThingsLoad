@@ -1,0 +1,11 @@
+package-as: LibThingsLoad
+
+externals:
+	libs/LibStub: https://repos.curseforge.com/wow/libstub/trunk
+
+enable-nolib-creation: yes
+
+ignore:
+	- .*\.md$
+	- libs/.*\.toc$
+	- libs/LibStub/tests
