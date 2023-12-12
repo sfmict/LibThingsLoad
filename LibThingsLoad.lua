@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 1
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 2
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -251,7 +251,7 @@ end
 function methods:AddSpells(...)
 	if not self[listener.types.spell] then
 		listener:fill(listener.types.spell, self, ...)
-		listener:checkItems(self)
+		listener:checkSpell(self)
 		return self
 	else
 		error("Spells table already exists")
