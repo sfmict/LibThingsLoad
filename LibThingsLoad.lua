@@ -2,12 +2,12 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 2
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 3
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
 
-local type, next, tremove, setmetatable, C_Item, C_Spell = type, next, tremove, setmetatable, C_Item, C_Spell
+local type, next, xpcall, setmetatable, geterrorhandler, C_Item, C_Spell = type, next, xpcall, setmetatable, geterrorhandler, C_Item, C_Spell
 
 
 if not lib._listener then
@@ -62,29 +62,29 @@ end
 function listener:FireCallbacks(loadType, id, success)
 	local ps = self[loadType][id]
 	if ps then
-		local i = 1
-		local p = ps[i]
-		while p do
+		self[loadType][id] = nil
+		local errorhandler = geterrorhandler()
+
+		for i = 1, #ps do
+			local p = ps[i]
 			local pt = p[loadType]
 
 			if pt[id] == -1 then
 				pt[id] = success
 				pt.count = pt.count + 1
 
-				if success then if p._thenForAll then p:_thenForAll(id, loadType) end
-				elseif p._fail then p:_fail(id, loadType) end
-
-				if pt.count == pt.total then
-					if p._then and self:checkThen(p) then p:_then() end
-					tremove(ps, i)
-				else
-					i = i + 1
+				if success then
+					if p._thenForAll then
+						xpcall(p._thenForAll, errorhandler, p, id, loadType)
+					end
+				elseif p._fail then
+					xpcall(p._fail, errorhandler, p, id, loadType)
 				end
-			else
-				i = i + 1
-			end
 
-			p = ps[i]
+				if pt.count == pt.total and p._then and self:checkThen(p) then
+					xpcall(p._then, errorhandler, p)
+				end
+			end
 		end
 	end
 end
@@ -92,8 +92,9 @@ end
 
 function listener:loadID(loadType, id, p)
 	self[loadType][id] = self[loadType][id] or {}
-	self[loadType][id][#self[loadType][id] + 1] = p
-	self.accessors[loadType](id)
+	local index = #self[loadType][id] + 1
+	self[loadType][id][index] = p
+	if index == 1 then self.accessors[loadType](id) end
 end
 
 
@@ -177,11 +178,13 @@ end
 local methods = lib._meta.__index
 
 
-local function checkStatus(loadType, p, status, callback)
-	if p[loadType] then
-		for id, idStatus in next, p[loadType] do
-			if idStatus == status then
-				callback(p, id, loadType)
+local function checkStatus(p, status, callback)
+	for k, loadType in next, listener.types do
+		if p[loadType] then
+			for id, idStatus in next, p[loadType] do
+				if idStatus == status then
+					callback(p, id, loadType)
+				end
 			end
 		end
 	end
@@ -205,9 +208,7 @@ end
 
 
 function methods:ThenForAllWithCached(callback)
-	for k, loadType in next, listener.types do
-		checkStatus(loadType, self, true, callback)
-	end
+	checkStatus(self, true, callback)
 	return self:ThenForAll(callback)
 end
 
@@ -219,9 +220,7 @@ end
 
 
 function methods:FailWithChecked(callback)
-	for k, loadType in next, listener.types do
-		checkStatus(loadType, self, false, callback)
-	end
+	checkStatus(self, false, callback)
 	return self:Fail(callback)
 end
 
@@ -260,17 +259,17 @@ end
 
 
 function methods:IsQuestCached(questID)
-	return self[listener.types.quest] and self[listener.types.quest][questID] == true
+	return (self[listener.types.quest] and self[listener.types.quest][questID]) == true
 end
 
 
 function methods:IsItemCached(itemID)
-	return self[listener.types.item] and self[listener.types.item][itemID] == true
+	return (self[listener.types.item] and self[listener.types.item][itemID]) == true
 end
 
 
 function methods:IsSpellCached(spellID)
-	return self[listener.types.spell] and self[listener.types.spell][spellID] == true
+	return (self[listener.types.spell] and self[listener.types.spell][spellID]) == true
 end
 
 
