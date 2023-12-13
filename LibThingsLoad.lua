@@ -2,34 +2,37 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 3
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 4
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
 
-local type, next, xpcall, setmetatable, geterrorhandler, C_Item, C_Spell = type, next, xpcall, setmetatable, geterrorhandler, C_Item, C_Spell
+local type, next, xpcall, setmetatable, CallErrorHandler, C_Item, C_Spell = type, next, xpcall, setmetatable, CallErrorHandler, C_Item, C_Spell
 
 
 if not lib._listener then
 	lib._listener = CreateFrame("Frame")
 	lib._listener:SetScript("OnEvent", function(self, event, ...) self[event](self, ...) end)
-	lib._listener:RegisterEvent("QUEST_DATA_LOAD_RESULT")
 	lib._listener:RegisterEvent("ITEM_DATA_LOAD_RESULT")
 	lib._listener:RegisterEvent("SPELL_DATA_LOAD_RESULT")
 	lib._listener.types = {
-		quest = "quest",
 		item = "item",
 		spell = "spell",
 	}
 	lib._listener.accessors = {
-		[lib._listener.types.quest] = C_QuestLog.RequestLoadQuestByID,
 		[lib._listener.types.item] = C_Item.RequestLoadItemDataByID,
 		[lib._listener.types.spell] = C_Spell.RequestLoadSpellData,
 	}
-	lib._listener[lib._listener.types.quest] = {}
 	lib._listener[lib._listener.types.item] = {}
 	lib._listener[lib._listener.types.spell] = {}
 	lib._meta = {__index = {}}
+
+	if C_EventUtils.IsEventValid("QUEST_DATA_LOAD_RESULT") then
+		lib._listener:RegisterEvent("QUEST_DATA_LOAD_RESULT")
+		lib._listener.types.quest = "quest"
+		lib._listener.accessors[lib._listener.types.quest] = C_QuestLog.RequestLoadQuestByID
+		lib._listener[lib._listener.types.quest] = {}
+	end
 end
 local listener = lib._listener
 
@@ -63,7 +66,6 @@ function listener:FireCallbacks(loadType, id, success)
 	local ps = self[loadType][id]
 	if ps then
 		self[loadType][id] = nil
-		local errorhandler = geterrorhandler()
 
 		for i = 1, #ps do
 			local p = ps[i]
@@ -75,14 +77,14 @@ function listener:FireCallbacks(loadType, id, success)
 
 				if success then
 					if p._thenForAll then
-						xpcall(p._thenForAll, errorhandler, p, id, loadType)
+						xpcall(p._thenForAll, CallErrorHandler, p, id, loadType)
 					end
 				elseif p._fail then
-					xpcall(p._fail, errorhandler, p, id, loadType)
+					xpcall(p._fail, CallErrorHandler, p, id, loadType)
 				end
 
 				if pt.count == pt.total and p._then and self:checkThen(p) then
-					xpcall(p._then, errorhandler, p)
+					xpcall(p._then, CallErrorHandler, p)
 				end
 			end
 		end
@@ -95,15 +97,6 @@ function listener:loadID(loadType, id, p)
 	local index = #self[loadType][id] + 1
 	self[loadType][id][index] = p
 	if index == 1 then self.accessors[loadType](id) end
-end
-
-
-function listener:checkQuests(p)
-	for questID, status in next, p[self.types.quest] do
-		if status == -1 then
-			self:loadID(self.types.quest, questID, p)
-		end
-	end
 end
 
 
@@ -147,6 +140,17 @@ function listener:checkSpell(p)
 			else
 				pt[spellID] = false
 				pt.count = pt.count + 1
+			end
+		end
+	end
+end
+
+
+if listener.types.quest then
+	function listener:checkQuests(p)
+		for questID, status in next, p[self.types.quest] do
+			if status == -1 then
+				self:loadID(self.types.quest, questID, p)
 			end
 		end
 	end
@@ -225,17 +229,6 @@ function methods:FailWithChecked(callback)
 end
 
 
-function methods:AddQuests(...)
-	if not self[listener.types.quest] then
-		listener:fill(listener.types.quest, self, ...)
-		listener:checkQuests(self)
-		return self
-	else
-		error("Quests table already exists")
-	end
-end
-
-
 function methods:AddItems(...)
 	if not self[listener.types.item] then
 		listener:fill(listener.types.item, self, ...)
@@ -258,8 +251,16 @@ function methods:AddSpells(...)
 end
 
 
-function methods:IsQuestCached(questID)
-	return (self[listener.types.quest] and self[listener.types.quest][questID]) == true
+if listener.types.quest then
+	function methods:AddQuests(...)
+		if not self[listener.types.quest] then
+			listener:fill(listener.types.quest, self, ...)
+			listener:checkQuests(self)
+			return self
+		else
+			error("Quests table already exists")
+		end
+	end
 end
 
 
@@ -273,16 +274,18 @@ function methods:IsSpellCached(spellID)
 end
 
 
+if listener.types.quest then
+	function methods:IsQuestCached(questID)
+		return (self[listener.types.quest] and self[listener.types.quest][questID]) == true
+	end
+end
+
+
 ---------------------------------------------
 -- LIBRARY METHODS
 ---------------------------------------------
 function lib:CreatePromise()
 	return setmetatable({}, self._meta)
-end
-
-
-function lib:Quests(...)
-	return self:CreatePromise():AddQuests(...)
 end
 
 
@@ -296,10 +299,17 @@ function lib:Spells(...)
 end
 
 
-function lib:Everythings(quests, items, spells)
+if listener.types.quest then
+	function lib:Quests(...)
+		return self:CreatePromise():AddQuests(...)
+	end
+end
+
+
+function lib:Everythings(items, spells, quests)
 	local p = self:CreatePromise()
-	if quests then p:AddQuests(quests) end
 	if items then p:AddItems(items) end
 	if spells then p:AddSpells(spells) end
+	if quests and p.AddQuests then p:AddQuests(quests) end
 	return p
 end
