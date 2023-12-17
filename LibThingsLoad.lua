@@ -297,3 +297,100 @@ function lib:Everythings(items, spells, quests)
 	if quests and p.AddQuests then p:AddQuests(quests) end
 	return p
 end
+
+
+-- ITEM UTILS
+function lib:GetItemIcon(itemID)
+	return C_Item.GetItemIconByID(itemID)
+end
+
+
+function lib:GetItemName(itemID)
+	return C_Item.GetItemNameByID(itemID)
+end
+
+
+function lib:GetItemLink(itemID)
+	local _, link = GetItemInfo(itemID)
+	return link
+end
+
+
+function lib:GetItemQuality(itemID)
+	return C_Item.GetItemQualityByID(itemID)
+end
+
+
+function lib:GetItemQualityColor(itemID)
+	return ITEM_QUALITY_COLORS[self:GetItemQuality(itemID)]
+end
+
+
+function lib:GetItemQualityColorRGB(itemID)
+	return self:GetItemQualityColor(itemID).color:GetRGB()
+end
+
+
+function lib:GetItemCurrentLevel(itemID)
+	return GetDetailedItemLevelInfo(itemID)
+end
+
+
+function lib:GetItemMaxStackSize(itemID)
+	return C_Item.GetItemMaxStackSizeByID(itemID)
+end
+
+
+function lib:IsItemStackable(itemID)
+	local maxStackSize = self:GetItemMaxStackSize(itemID)
+	return maxStackSize and maxStackSize > 1
+end
+
+
+function lib:GetItemInventoryType(itemID)
+	return C_Item.GetItemInventoryTypeByID(itemID)
+end
+
+
+function lib:GetItemInventoryTypeName(itemID)
+	local _,_,_, itemEquipLoc = GetItemInfoInstant(itemID)
+	return itemEquipLoc
+end
+
+
+function lib:IsItemDataCached(itemID)
+	return IsItemDataCachedByID(itemID)
+end
+
+
+-- SPELL UTILS
+function lib:GetSpellName(spellID)
+	return GetSpellInfo(spellID)
+end
+
+
+function lib:GetSpellSubtext(spellID)
+	return GetSpellSubtext(spellID)
+end
+
+
+function lib:GetSpellFullName(spellID)
+	local name = self:GetSpellName(spellID)
+	local subText = self:GetSpellSubtext(spellID)
+	return subText and #subText > 0 and name.."("..subText..")" or name
+end
+
+
+function lib:GetSpellTexture(spellID)
+	return GetSpellTexture(spellID)
+end
+
+
+function lib:GetSpellDescription(spellID)
+	return GetSpellDescription(spellID)
+end
+
+
+function lib:IsSpellDataCached(spellID)
+	return IsSpellDataCached(spellID)
+end
