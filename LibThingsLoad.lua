@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 5
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 6
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -98,24 +98,47 @@ function listener:loadID(loadType, id, p)
 end
 
 
-function listener:fill(loadType, p, ids, ...)
-	local t = p[loadType] or {}
-	p[loadType] = t
+function listener:fill(loadType, p, doesExist, isCached, t, ...)
+	if type(t) == "number" then t = {t, ...} end
 
-	if type(ids) == "number" then ids = {ids, ...} end
+	if type(t) == "table" then
+		local pt = p[loadType] or {}
+		p[loadType] = pt
 
-	if type(ids) == "table" then
-		t.count = t.count or 0
-		t.total = t.total or 0
+		pt.count = pt.count or 0
+		pt.total = pt.total or 0
 
-		for i = 1, #ids do
-			if t[ids[i]] == nil then
-				t[ids[i]] = -2
-				t.total = t.total + 1
+		if doesExist then
+			for i = 1, #t do
+				local id = t[i]
+
+				if pt[id] == nil then
+					if doesExist(id) then
+						if isCached(id) then
+							pt[id] = true
+							pt.count = pt.count + 1
+						else
+							pt[id] = -1
+							self:loadID(loadType, id, p)
+						end
+					else
+						pt[id] = false
+						pt.count = pt.count + 1
+					end
+					pt.total = pt.total + 1
+				end
+			end
+		else
+			for i = 1, #t do
+				local id = t[i]
+
+				if pt[id] == nil then
+					pt[id] = -1
+					self:loadID(loadType, id, p)
+					pt.total = pt.total + 1
+				end
 			end
 		end
-
-		return ids, t
 	else
 		error("Bad arguments (table of IDs or IDs expected)")
 	end
@@ -176,73 +199,20 @@ end
 
 
 function methods:AddItems(...)
-	local loadType = listener.types.item
-	local t, pt = listener:fill(loadType, self, ...)
-
-	for i = 1, #t do
-		local itemID = t[i]
-
-		if pt[itemID] == -2 then
-			if DoesItemExistByID(itemID) then
-				if IsItemDataCachedByID(itemID) then
-					pt[itemID] = true
-					pt.count = pt.count + 1
-				else
-					pt[itemID] = -1
-					listener:loadID(loadType, itemID, self)
-				end
-			else
-				pt[itemID] = false
-				pt.count = pt.count + 1
-			end
-		end
-	end
-
+	listener:fill(listener.types.item, self, DoesItemExistByID, IsItemDataCachedByID, ...)
 	return self
 end
 
 
 function methods:AddSpells(...)
-	local loadType = listener.types.spell
-	local t, pt = listener:fill(loadType, self, ...)
-
-	for i = 1, #t do
-		local spellID = t[i]
-
-		if pt[spellID] == -2 then
-			if DoesSpellExist(spellID) then
-				if IsSpellDataCached(spellID) then
-					pt[spellID] = true
-					pt.count = pt.count + 1
-				else
-					pt[spellID] = -1
-					listener:loadID(loadType, spellID, self)
-				end
-			else
-				pt[spellID] = false
-				pt.count = pt.count + 1
-			end
-		end
-	end
-
+	listener:fill(listener.types.spell, self, DoesSpellExist, IsSpellDataCached, ...)
 	return self
 end
 
 
 if listener.types.quest then
 	function methods:AddQuests(...)
-		local loadType = listener.types.quest
-		local t, pt = listener:fill(loadType, self, ...)
-
-		for i = 1, #t do
-			local questID = t[i]
-
-			if pt[questID] == -2 then
-				pt[questID] = -1
-				listener:loadID(loadType, questID, self)
-			end
-		end
-
+		listener:fill(listener.types.quest, self, nil, nil, ...)
 		return self
 	end
 end
