@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 6
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 7
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -39,11 +39,6 @@ end
 local listener = lib._listener
 
 
-function listener:QUEST_DATA_LOAD_RESULT(...)
-	self:fireCallbacks(self.types.quest, ...)
-end
-
-
 function listener:ITEM_DATA_LOAD_RESULT(...)
 	self:fireCallbacks(self.types.item, ...)
 end
@@ -51,6 +46,13 @@ end
 
 function listener:SPELL_DATA_LOAD_RESULT(...)
 	self:fireCallbacks(self.types.spell, ...)
+end
+
+
+if listener.types.quest then
+	function listener:QUEST_DATA_LOAD_RESULT(...)
+		self:fireCallbacks(self.types.quest, ...)
+	end
 end
 
 
@@ -145,6 +147,47 @@ function listener:fill(loadType, p, doesExist, isCached, t, ...)
 end
 
 
+function listener:fillByKey(loadType, p, doesExist, isCached, t)
+	if type(t) == "table" then
+		local pt = p[loadType] or {}
+		p[loadType] = pt
+
+		pt.count = pt.count or 0
+		pt.total = pt.total or 0
+
+		if doesExist then
+			for id in next, t do
+				if pt[id] == nil then
+					if doesExist(id) then
+						if isCached(id) then
+							pt[id] = true
+							pt.count = pt.count + 1
+						else
+							pt[id] = -1
+							self:loadID(loadType, id, p)
+						end
+					else
+						pt[id] = false
+						pt.count = pt.count + 1
+					end
+					pt.total = pt.total + 1
+				end
+			end
+		else
+			for id in next, t do
+				if pt[id] == nil then
+					pt[id] = -1
+					self:loadID(loadType, id, p)
+					pt.total = pt.total + 1
+				end
+			end
+		end
+	else
+		error("Bad arguments (table expected)")
+	end
+end
+
+
 ---------------------------------------------
 -- PROMISE METHODS
 ---------------------------------------------
@@ -204,8 +247,20 @@ function methods:AddItems(...)
 end
 
 
+function methods:AddItemsByKey(t)
+	listener:fillByKey(listener.types.item, self, DoesItemExistByID, IsItemDataCachedByID, t)
+	return self
+end
+
+
 function methods:AddSpells(...)
 	listener:fill(listener.types.spell, self, DoesSpellExist, IsSpellDataCached, ...)
+	return self
+end
+
+
+function methods:AddSpellsByKey(t)
+	listener:fillByKey(listener.types.spell, self, DoesSpellExist, IsSpellDataCached, t)
 	return self
 end
 
@@ -213,6 +268,12 @@ end
 if listener.types.quest then
 	function methods:AddQuests(...)
 		listener:fill(listener.types.quest, self, nil, nil, ...)
+		return self
+	end
+
+
+	function methods:AddQuestsByKey(t)
+		listener:fillByKey(listener.types.quest, self, nil, nil, t)
 		return self
 	end
 end
@@ -248,14 +309,29 @@ function lib:Items(...)
 end
 
 
+function lib:ItemsByKey(t)
+	return self:CreatePromise():AddItemsByKey(t)
+end
+
+
 function lib:Spells(...)
 	return self:CreatePromise():AddSpells(...)
+end
+
+
+function lib:SpellsByKey(t)
+	return self:CreatePromise():AddSpellsByKey(t)
 end
 
 
 if listener.types.quest then
 	function lib:Quests(...)
 		return self:CreatePromise():AddQuests(...)
+	end
+
+
+	function lib:QuestsByKey(t)
+		return self:CreatePromise():AddQuestsByKey(t)
 	end
 end
 
@@ -265,6 +341,15 @@ function lib:Everythings(items, spells, quests)
 	if items then p:AddItems(items) end
 	if spells then p:AddSpells(spells) end
 	if quests and p.AddQuests then p:AddQuests(quests) end
+	return p
+end
+
+
+function lib:EverythingsByKey(items, spells, quests)
+	local p = self:CreatePromise()
+	if items then p:AddItemsByKey(items) end
+	if spells then p:AddSpellsByKey(spells) end
+	if quests and p.AddQuestsByKey then p:AddQuestsByKey(quests) end
 	return p
 end
 
