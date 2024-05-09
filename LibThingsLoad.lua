@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 7
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 8
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -208,10 +208,9 @@ end
 
 
 function methods:Then(callback)
+	self._then = callback
 	if listener:checkThen(self) then
-		callback(self)
-	else
-		self._then = callback
+		self:_then()
 	end
 	return self
 end

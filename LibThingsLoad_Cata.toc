@@ -1,4 +1,4 @@
-## Interface: 30403
+## Interface: 40400
 ## Title: LibThingsLoad
 ## Author: sfmict
 ## Notes: Library for load quests, items and spells
