@@ -14,6 +14,7 @@ local GetDetailedItemLevelInfo = GetDetailedItemLevelInfo or C_Item.GetDetailedI
 local GetItemInfoInstant = GetItemInfoInstant or C_Item.GetItemInfoInstant
 local DoesSpellExist, IsSpellDataCached = C_Spell.DoesSpellExist, C_Spell.IsSpellDataCached
 local GetSpellSubtext = GetSpellSubtext or C_Spell.GetSpellSubtext
+local GetSpellLink = GetSpellLink or C_Spell.GetSpellLink
 local GetSpellTexture = GetSpellTexture or C_Spell.GetSpellTexture
 local GetSpellDescription = GetSpellDescription or C_Spell.GetSpellDescription
 
@@ -488,6 +489,11 @@ function lib:GetSpellFullName(spellID)
 	local name = self:GetSpellName(spellID)
 	local subText = self:GetSpellSubtext(spellID)
 	return subText and #subText > 0 and name.."("..subText..")" or name
+end
+
+
+function lib:GetSpellLink(spellID)
+	return GetSpellLink(spellID)
 end
 
 
