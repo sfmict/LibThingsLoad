@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 10
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 11
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -492,8 +492,8 @@ function lib:GetSpellFullName(spellID)
 end
 
 
-function lib:GetSpellLink(spellID)
-	return GetSpellLink(spellID)
+function lib:GetSpellLink(...)
+	return GetSpellLink(...)
 end
 
 
