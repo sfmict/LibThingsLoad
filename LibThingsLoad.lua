@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 11
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 12
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -107,7 +107,7 @@ function listener:loadID(loadType, id, p)
 end
 
 
-function listener:fill(loadType, p, doesExist, isCached, t, ...)
+function listener:fill(loadType, p, doesExist, t, ...)
 	if type(t) == "number" then t = {t, ...} end
 
 	if type(t) == "table" then
@@ -123,13 +123,8 @@ function listener:fill(loadType, p, doesExist, isCached, t, ...)
 
 				if pt[id] == nil then
 					if doesExist(id) then
-						if isCached(id) then
-							pt[id] = true
-							pt.count = pt.count + 1
-						else
-							pt[id] = -1
-							self:loadID(loadType, id, p)
-						end
+						pt[id] = -1
+						self:loadID(loadType, id, p)
 					else
 						pt[id] = false
 						pt.count = pt.count + 1
@@ -154,7 +149,7 @@ function listener:fill(loadType, p, doesExist, isCached, t, ...)
 end
 
 
-function listener:fillByKey(loadType, p, doesExist, isCached, t)
+function listener:fillByKey(loadType, p, doesExist, t)
 	if type(t) == "table" then
 		local pt = p[loadType] or {}
 		p[loadType] = pt
@@ -166,13 +161,8 @@ function listener:fillByKey(loadType, p, doesExist, isCached, t)
 			for id in next, t do
 				if pt[id] == nil then
 					if doesExist(id) then
-						if isCached(id) then
-							pt[id] = true
-							pt.count = pt.count + 1
-						else
-							pt[id] = -1
-							self:loadID(loadType, id, p)
-						end
+						pt[id] = -1
+						self:loadID(loadType, id, p)
 					else
 						pt[id] = false
 						pt.count = pt.count + 1
@@ -248,38 +238,38 @@ end
 
 
 function methods:AddItems(...)
-	listener:fill(listener.types.item, self, DoesItemExistByID, IsItemDataCachedByID, ...)
+	listener:fill(listener.types.item, self, DoesItemExistByID, ...)
 	return self
 end
 
 
 function methods:AddItemsByKey(t)
-	listener:fillByKey(listener.types.item, self, DoesItemExistByID, IsItemDataCachedByID, t)
+	listener:fillByKey(listener.types.item, self, DoesItemExistByID, t)
 	return self
 end
 
 
 function methods:AddSpells(...)
-	listener:fill(listener.types.spell, self, DoesSpellExist, IsSpellDataCached, ...)
+	listener:fill(listener.types.spell, self, DoesSpellExist, ...)
 	return self
 end
 
 
 function methods:AddSpellsByKey(t)
-	listener:fillByKey(listener.types.spell, self, DoesSpellExist, IsSpellDataCached, t)
+	listener:fillByKey(listener.types.spell, self, DoesSpellExist, t)
 	return self
 end
 
 
 if listener.types.quest then
 	function methods:AddQuests(...)
-		listener:fill(listener.types.quest, self, nil, nil, ...)
+		listener:fill(listener.types.quest, self, nil, ...)
 		return self
 	end
 
 
 	function methods:AddQuestsByKey(t)
-		listener:fillByKey(listener.types.quest, self, nil, nil, t)
+		listener:fillByKey(listener.types.quest, self, nil, t)
 		return self
 	end
 end
