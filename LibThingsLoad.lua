@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 12
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 13
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -347,6 +347,20 @@ function lib:EverythingsByKey(items, spells, quests)
 	if spells then p:AddSpellsByKey(spells) end
 	if quests and p.AddQuestsByKey then p:AddQuestsByKey(quests) end
 	return p
+end
+
+
+function lib:SetScriptAfter(frame, event, method, ids, func)
+	frame:SetScript(event, function(frame)
+		frame:SetScript(event, nil)
+		if frame.Disable then frame:Disable() end
+		if type(ids) == "function" then ids = ids(frame) end
+		self[method](self, ids):Then(function()
+			frame:SetScript(event, func)
+			if frame.Enable then frame:Enable() end
+			func(frame)
+		end)
+	end)
 end
 
 

@@ -1,4 +1,4 @@
-## Interface: 1100007, 110005, 40401, 11505
+## Interface: 110007, 110005, 40401, 11505
 ## Title: LibThingsLoad
 ## Author: sfmict
 ## Notes: Library for load quests, items and spells
