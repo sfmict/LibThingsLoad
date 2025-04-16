@@ -1,4 +1,4 @@
-## Interface: 110100, 40402, 11506
+## Interface: 110100, 40402, 11507
 ## Title: LibThingsLoad
 ## Author: sfmict
 ## Version: @project-version@
@@ -12,6 +12,7 @@
 ## Category-ruRU: Библиотеки
 ## Category-zhCN: 函数库
 ## Category-zhTW: 函式庫
+## LoadOnDemand: 1
 ## OptionalDeps: LibStub
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
