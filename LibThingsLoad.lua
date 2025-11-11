@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 14
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 15
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -435,53 +435,18 @@ end
 
 
 -- SPELL UTILS
-if C_Spell.GetSpellInfo then
-	function lib:GetSpellInfo(spellID)
-		return C_Spell.GetSpellInfo(spellID)
-	end
-else
-	local GetSpellinfo = GetSpellinfo
-	function lib:GetSpellInfo(spellID)
-		local name, _, icon, castTime, minRange, maxRange, spellID, originalIcon = GetSpellInfo(spellID)
-		return {
-			name = name,
-			iconID = icon,
-			originalIconID = originalIcon,
-			castTime = castTime,
-			minRange = minRange,
-			maxRange = maxRange,
-			spellID = spellID,
-		}
-	end
+function lib:GetSpellInfo(spellID)
+	return C_Spell.GetSpellInfo(spellID)
 end
 
 
-if C_Spell.GetSpellCooldown then
-	function lib:GetSpellCooldown(spellID)
-		return C_Spell.GetSpellCooldown(spellID)
-	end
-else
-	local GetSpellCooldown = GetSpellCooldown
-	function lib:GetSpellCooldown(spellID)
-		local start, duration, enabled, modRate = GetSpellCooldown(spellID)
-		return {
-			startTime = start,
-			duration = duration,
-			isEnabled = enabled == 0,
-			modRate = modRate,
-		}
-	end
+function lib:GetSpellCooldown(spellID)
+	return C_Spell.GetSpellCooldown(spellID)
 end
 
 
-if C_Spell.GetSpellName then
-	function lib:GetSpellName(spellID)
-		return C_Spell.GetSpellName(spellID)
-	end
-else
-	function lib:GetSpellName(spellID)
-		return self:GetSpellInfo(spellID).name
-	end
+function lib:GetSpellName(spellID)
+	return C_Spell.GetSpellName(spellID)
 end
 
 
