@@ -2,7 +2,7 @@
 ---------------------------------------------------------------
 -- LibThingsLoad - Library for load quests, items and spells --
 ---------------------------------------------------------------
-local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 15
+local MAJOR_VERSION, MINOR_VERSION = "LibThingsLoad-1.0", 16
 local lib, oldminor = LibStub:NewLibrary(MAJOR_VERSION, MINOR_VERSION)
 if not lib then return end
 
@@ -28,6 +28,7 @@ if not lib._listener then
 		item = "item",
 		spell = "spell",
 	}
+	lib._listener.typeCount = 2
 	lib._listener.accessors = {
 		[lib._listener.types.item] = C_Item.RequestLoadItemDataByID,
 		[lib._listener.types.spell] = C_Spell.RequestLoadSpellData,
@@ -39,11 +40,19 @@ if not lib._listener then
 	if C_EventUtils.IsEventValid("QUEST_DATA_LOAD_RESULT") then
 		lib._listener:RegisterEvent("QUEST_DATA_LOAD_RESULT")
 		lib._listener.types.quest = "quest"
+		lib._listener.typeCount = lib._listener.typeCount + 1
 		lib._listener.accessors[lib._listener.types.quest] = C_QuestLog.RequestLoadQuestByID
 		lib._listener[lib._listener.types.quest] = {}
 	end
 end
 local listener = lib._listener
+
+
+if oldminor and oldminor < 16 then
+	local i = 0
+	for _ in next, listener.types do i = i + 1 end
+	listener.typeCount = i
+end
 
 
 function listener:ITEM_DATA_LOAD_RESULT(...)
@@ -64,12 +73,11 @@ end
 
 
 function listener:checkThen(p)
-	local i, j = 0, 0
+	local i = 0
 	for k, loadType in next, self.types do
-		i = i + 1
-		if not p[loadType] or p[loadType].count == p[loadType].total then j = j + 1 end
+		if not p[loadType] or p[loadType].count == p[loadType].total then i = i + 1 end
 	end
-	return i == j
+	return i == self.typeCount
 end
 
 
